@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Feign Logs</title>
+    <meta charset="UTF-8">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .log-content {
+            max-height: 3.5em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            cursor: pointer;
+            word-break: break-word;
+            transition: all 0.3s ease-in-out;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .log-content.expanded {
+            max-height: none;
+            -webkit-line-clamp: unset;
+            white-space: normal;
+        }
+
+        @media (max-width: 768px) {
+            .log-content {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="container py-5">
+<nav class="mb-4">
+    <a class="btn btn-primary me-2" href="/dashboard">Dashboard</a>
+    <a class="btn btn-secondary me-2" href="/raw">Raw View</a>
+    <a class="btn btn-dark" href="/feign-logs">Feign Logs</a>
+</nav>
+
+<h1 class="mb-4">📜 Feign Logs</h1>
+
+<a class="btn btn-success mb-3" href="/feign-logs/export">⬇ Export CSV</a>
+
+<!-- Search form -->
+<form class="input-group mb-3" method="get" th:action="@{/feign-logs}">
+    <input type="text" class="form-control" name="keyword" placeholder="Search log content..."
+           th:value="${keyword}">
+    <button class="btn btn-primary" type="submit">Search</button>
+</form>
+
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+    <tr>
+        <th>ID</th>
+        <th>Content</th>
+        <th>Time</th>
+        <th>Detail</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="log : ${logPage.content}">
+        <td th:text="${log.id}"></td>
+        <td>
+            <div class="log-content" id="log-content-[[${log.id}]]"
+                 onclick="this.classList.toggle('expanded')"
+                 th:text="${log.content}"></div>
+            <button class="btn btn-sm btn-outline-secondary mt-1"
+                    onclick="copyToClipboard('log-content-[[${log.id}]]')">
+                📋 Copy
+            </button>
+        </td>
+        <td th:text="${#temporals.format(log.time, 'yyyy-MM-dd HH:mm:ss')}"></td>
+        <td>
+            <button class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#logModal"
+                    th:data-content="${log.content}" th:data-id="${log.id}">View</button>
+        </td>
+
+    </tr>
+    </tbody>
+</table>
+
+<!-- Pagination -->
+<nav th:if="${logPage.totalPages > 1}">
+    <ul class="pagination justify-content-center">
+        <li class="page-item" th:classappend="${logPage.first}? 'disabled'">
+            <a class="page-link"
+               th:href="@{/feign-logs(page=${logPage.number - 1}, keyword=${keyword})}">Previous</a>
+        </li>
+        <li class="page-item"
+            th:each="i : ${#numbers.sequence(0, logPage.totalPages - 1)}"
+            th:classappend="${logPage.number == i}? 'active'">
+            <a class="page-link"
+               th:href="@{/feign-logs(page=${i}, keyword=${keyword})}"
+               th:text="${i + 1}"></a>
+        </li>
+        <li class="page-item" th:classappend="${logPage.last}? 'disabled'">
+            <a class="page-link"
+               th:href="@{/feign-logs(page=${logPage.number + 1}, keyword=${keyword})}">Next</a>
+        </li>
+    </ul>
+</nav>
+
+<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Log Detail</h5></div>
+            <div class="modal-body"><pre id="logDetailContent" class="text-wrap"></pre></div>
+        </div>
+    </div>
+</div>
+<script src="/js/bootstrap.bundle.min.js"></script>
+<script>
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text)
+            .then(() => alert("✅ Copied!"))
+            .catch(err => alert("❌ Copy failed: " + err));
+    }
+</script>
+<script>
+    const logModal = document.getElementById('logModal');
+    logModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const content = button.getAttribute('data-content');
+        document.getElementById('logDetailContent').textContent = content;
+    });
+</script>
+</body>
+
+</html>
