@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -21,12 +22,32 @@ public class DataInitializer {
 
     @PostConstruct
     public void init() {
+
+        // Kiểm tra file H2
+        /*************
+        File dbFile = new File("./data/chatdb.mv.db");
+        if (dbFile.exists()) {
+            System.out.println("DB file đã tồn tại -> bỏ qua khởi tạo dữ liệu mẫu.");
+            return;
+        }
+
+        // Thêm dữ liệu mẫu nếu DB chưa tồn tại
+        System.out.println("Khởi tạo dữ liệu mẫu vì DB chưa tồn tại...");
+        // yourRepo.save(...);
+        *************/
+
         if (repository.count() == 0) {
             List<String> urls = List.of(
-                    "https://www.google.com.vn",
+                    "https://www.google.com",
                     "https://github.com",
-                    "https://spring.io",
-                    "https://nonexistent.example.com"
+                    "https://docs.spring.io",
+                    "https://stackoverflow.com",
+                    "https://openai.com",
+                    "https://example.org", // tồn tại nhưng thường dùng để mô phỏng
+                    "https://invalid-url.fake", // dùng để giả lập unreachable
+                    "https://localhost:9999",   // mô phỏng service nội bộ chưa bật
+                    "https://api.fake-service.local", // mô phỏng microservice không có thực
+                    "https://your-internal-service.com/api/health" // giả lập endpoint nội bộ
             );
 
             for (String url : urls) {
@@ -37,15 +58,41 @@ public class DataInitializer {
                 repository.save(status);
             }
         }
-    }
 
-    @PostConstruct
-    public void initLogs() {
         if (feignLogRepo.count() == 0) {
-            for (int i = 1; i <= 10; i++) {
+            String[] methods = {"GET", "POST", "PUT", "DELETE"};
+            String[] urls = {
+                    "https://api.example.com/users",
+                    "https://auth.service.internal/login",
+                    "https://payment.service.local/transactions",
+                    "https://inventory.service/api/products/42",
+                    "https://external.api.io/search?q=laptop",
+                    "https://gateway.local/internal/health",
+                    "https://analytics.service/track",
+                    "https://config.service/api/v1/configs",
+                    "https://email.service/send",
+                    "https://files.service/upload"
+            };
+
+            for (int i = 0; i < 10; i++) {
+                String method = methods[i % methods.length];
+                String url = urls[i];
+
+                StringBuilder curl = new StringBuilder();
+                curl.append("curl -X ").append(method).append(" \\\n");
+                curl.append("  '").append(url).append("' \\\n");
+                curl.append("  -H 'Authorization: Bearer <token>' \\\n");
+                curl.append("  -H 'Content-Type: application/json'");
+
+                if ("POST".equals(method) || "PUT".equals(method)) {
+                    curl.append(" \\\n  -d '{\"id\":").append(i + 1)
+                            .append(", \"name\":\"Item ").append(i + 1)
+                            .append("\", \"active\":true}'");
+                }
+
                 FeignLog log = new FeignLog();
-                log.setContent("This is a simulated log content with details: #" + i + " - " + "A".repeat(200));
-                log.setTime(LocalDateTime.now().minusMinutes(i * 3));
+                log.setContent(curl.toString());
+                log.setTime(LocalDateTime.now().minusMinutes(i * 5));
                 feignLogRepo.save(log);
             }
         }

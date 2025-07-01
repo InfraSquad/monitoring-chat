@@ -3,6 +3,8 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 public class ChatHistory {
@@ -12,10 +14,19 @@ public class ChatHistory {
 
     private String sender;
     @Lob
-    @Column(columnDefinition = "CLOB")
     private String content;
     private String room;
     private LocalDateTime timestamp;
+    private String type = "text";
+    private String fileName;
+    @Lob
+    private String quote;
+
+    @ElementCollection
+    @CollectionTable(name = "message_reactions", joinColumns = @JoinColumn(name = "message_id"))
+    @MapKeyColumn(name = "emoji")
+    @Column(name = "count")
+    private Map<String, Integer> reactions = new HashMap<>();
 
     public Long getId() {
         return id;
@@ -57,5 +68,35 @@ public class ChatHistory {
         this.timestamp = timestamp;
     }
 
-    // Getters/setters...
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getQuote() {
+        return quote;
+    }
+
+    public void setQuote(String quote) {
+        this.quote = quote;
+    }
+
+    public Map<String, Integer> getReactions() {
+        return reactions;
+    }
+
+    public void setReactions(Map<String, Integer> reactions) {
+        this.reactions = reactions;
+    }
 }

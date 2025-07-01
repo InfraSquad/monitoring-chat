@@ -20,17 +20,21 @@ public class HomeController {
         this.healthService = healthService;
     }
 
+    @GetMapping("/architecture")
+    public String showArchitecturePage() {
+        return "architecture";
+    }
+
+
     @GetMapping("/")
-    public String home(Model model) {
-        healthService.checkAll();
-        model.addAttribute("urls", repo.findAll());
-        return "home";
+    public String redirectToDashboard() {
+        return "redirect:/dashboard";
     }
 
     @GetMapping("/dashboard")
     public String showDashboard(Model model,
                                 @RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "5") int size) {
+                                @RequestParam(defaultValue = "10") int size) {
         healthService.checkAll();
         Page<UrlStatus> urlPage = repo.findAll(PageRequest.of(page, size));
         model.addAttribute("urlPage", urlPage);

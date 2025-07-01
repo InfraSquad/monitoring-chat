@@ -4,6 +4,8 @@
     <title>Feign Logs</title>
     <meta charset="UTF-8">
     <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/bootstrap-icons-1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .log-content {
             max-height: 3.5em;
@@ -31,96 +33,272 @@
                 max-width: 100%;
             }
         }
+        .nav-link {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .nav-link.active {
+            background-color: #0d6efd !important; /* Bootstrap primary */
+            color: #fff !important;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: #e9ecef;
+            color: #0d6efd;
+        }
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+        #feign-logs-loading {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #global-loading-indicator {
+            transition: opacity 0.3s ease-in-out;
+        }
+
     </style>
 </head>
-<body class="container py-5">
-<nav class="mb-4">
-    <a class="btn btn-primary me-2" href="/dashboard">Dashboard</a>
-    <a class="btn btn-secondary me-2" href="/raw">Raw View</a>
-    <a class="btn btn-dark" href="/feign-logs">Feign Logs</a>
-</nav>
 
-<h1 class="mb-4">📜 Feign Logs</h1>
+<body class="bg-light">
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="bg-white border-end shadow-sm" style="width: 240px; min-height: 100vh;">
+        <div class="p-3 border-bottom">
+            <h5 class="mb-0 text-primary">📡 Insight Monitor</h5>
+        </div>
+        <ul class="nav flex-column p-2">
+            <li class="nav-item mb-1">
+                <a th:href="@{/dashboard}"
+                   th:classappend="${requestUri.startsWith('/dashboard')} ? 'active text-white' : 'text-dark'"
+                   class="nav-link d-flex align-items-center">
+                    <i class="bi bi-chat-left-dots me-2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a th:href="@{/raw}"
+                   th:classappend="${requestUri.startsWith('/raw')} ? 'active text-white' : 'text-dark'"
+                   class="nav-link d-flex align-items-center">
+                    <i class="bi bi-people me-2"></i> Raw View
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a th:href="@{/feign-logs}"
+                   th:classappend="${requestUri.startsWith('/feign-logs')} ? 'active text-white' : 'text-dark'"
+                   class="nav-link d-flex align-items-center">
+                    <i class="bi bi-graph-up-arrow me-2"></i> Feign Logs
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a th:href="@{/chat}"
+                   th:classappend="${requestUri.startsWith('/chat')} ? 'active text-white' : 'text-dark'"
+                   class="nav-link d-flex align-items-center">
+                    <i class="bi bi-chat-dots me-2"></i> Internal Chat
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a th:href="@{/architecture}"
+                   th:classappend="${requestUri.startsWith('/architecture')} ? 'active text-white' : 'text-dark'"
+                   class="nav-link d-flex align-items-center">
+                    <i class="bi bi-diagram-3 me-2"></i> Architecture
+                </a>
+            </li>
+            <li class="nav-item mt-3">
+                <a href="#" class="nav-link text-danger d-flex align-items-center">
+                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
 
-<a class="btn btn-success mb-3" href="/feign-logs/export">⬇ Export CSV</a>
+    <!-- Main Content -->
+    <div class="flex-grow-1 p-4">
+        <!-- Chat hoặc màn hình chính hiển thị ở đây -->
+        <h3>📜 Feign Request Logs</h3>
+        <p class="text-muted">Nhật ký các request gửi đi qua Feign client.</p>
 
-<!-- Search form -->
-<form class="input-group mb-3" method="get" th:action="@{/feign-logs}">
-    <input type="text" class="form-control" name="keyword" placeholder="Search log content..."
-           th:value="${keyword}">
-    <button class="btn btn-primary" type="submit">Search</button>
-</form>
+        <!-- Search and Export layout -->
+        <div class="d-flex align-items-center mb-3 gap-2 flex-wrap">
+            <form class="d-flex" method="get" th:action="@{/feign-logs}">
+                <input type="text" class="form-control me-2" name="keyword" placeholder="Search log content..."
+                       style="width: 250px;" th:value="${keyword}">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </form>
+            <a class="btn btn-outline-secondary" href="/feign-logs/export">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+        </div>
 
-<table class="table table-bordered table-hover">
-    <thead class="table-dark">
-    <tr>
-        <th>ID</th>
-        <th>Content</th>
-        <th>Time</th>
-        <th>Detail</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="log : ${logPage.content}">
-        <td th:text="${log.id}"></td>
-        <td>
-            <div class="log-content" id="log-content-[[${log.id}]]"
-                 onclick="this.classList.toggle('expanded')"
-                 th:text="${log.content}"></div>
-            <button class="btn btn-sm btn-outline-secondary mt-1"
-                    onclick="copyToClipboard('log-content-[[${log.id}]]')">
-                📋 Copy
-            </button>
-        </td>
-        <td th:text="${#temporals.format(log.time, 'yyyy-MM-dd HH:mm:ss')}"></td>
-        <td>
-            <button class="btn btn-link p-0" data-bs-toggle="modal" data-bs-target="#logModal"
-                    th:data-content="${log.content}" th:data-id="${log.id}">View</button>
-        </td>
+        <div id="feign-logs-wrapper" class="position-relative">
+            <!-- NỘI DUNG CỦA MÀN HÌNH -->
+            <table class="table table-bordered table-hover">
+                <thead class="table-primary">
+                <tr>
+                    <th>ID</th>
+                    <th>Content</th>
+                    <th>Time</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="log : ${logPage.content}">
+                    <td th:text="${log.id}"></td>
+                    <td>
+                        <div class="log-content mb-2" id="log-content-[[${log.id}]]"
+                             onclick="this.classList.toggle('expanded')"
+                             th:text="${log.content}"></div>
 
-    </tr>
-    </tbody>
-</table>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center"
+                                    onclick="copyToClipboard('log-content-[[${log.id}]]')">
+                                <i class="bi bi-clipboard me-1"></i> Copy
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary d-flex align-items-center"
+                                    data-bs-toggle="modal" data-bs-target="#logModal"
+                                    th:data-content="${log.content}" th:data-id="${log.id}">
+                                <i class="bi bi-eye me-1"></i> View
+                            </button>
+                        </div>
+                    </td>
 
-<!-- Pagination -->
-<nav th:if="${logPage.totalPages > 1}">
-    <ul class="pagination justify-content-center">
-        <li class="page-item" th:classappend="${logPage.first}? 'disabled'">
-            <a class="page-link"
-               th:href="@{/feign-logs(page=${logPage.number - 1}, keyword=${keyword})}">Previous</a>
-        </li>
-        <li class="page-item"
-            th:each="i : ${#numbers.sequence(0, logPage.totalPages - 1)}"
-            th:classappend="${logPage.number == i}? 'active'">
-            <a class="page-link"
-               th:href="@{/feign-logs(page=${i}, keyword=${keyword})}"
-               th:text="${i + 1}"></a>
-        </li>
-        <li class="page-item" th:classappend="${logPage.last}? 'disabled'">
-            <a class="page-link"
-               th:href="@{/feign-logs(page=${logPage.number + 1}, keyword=${keyword})}">Next</a>
-        </li>
-    </ul>
-</nav>
+                    <td th:text="${#temporals.format(log.time, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- Spinner overlay -->
+            <div id="loading-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75"
+                 style="z-index: 9999; display: none !important;">
+                <div class="spinner-border text-primary" role="status" style="width: 2.5rem; height: 2.5rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
 
-<div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title">Log Detail</h5></div>
-            <div class="modal-body"><pre id="logDetailContent" class="text-wrap"></pre></div>
+        <!-- Pagination -->
+        <nav th:if="${logPage.totalPages > 1}">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${logPage.first}? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/feign-logs(page=${logPage.number - 1}, keyword=${keyword})}">Previous</a>
+                </li>
+                <li class="page-item"
+                    th:each="i : ${#numbers.sequence(0, logPage.totalPages - 1)}"
+                    th:classappend="${logPage.number == i}? 'active'">
+                    <a class="page-link"
+                       th:href="@{/feign-logs(page=${i}, keyword=${keyword})}"
+                       th:text="${i + 1}"></a>
+                </li>
+                <li class="page-item" th:classappend="${logPage.last}? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/feign-logs(page=${logPage.number + 1}, keyword=${keyword})}">Next</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Toast Container -->
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+            <div id="custom-toast" class="toast align-items-center text-white bg-primary border-0" role="alert"
+                 aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body" id="toast-message">
+                        <!-- Nội dung toast sẽ được cập nhật ở đây -->
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Button (Top-Right Corner) -->
+        <div id="global-loading-indicator"
+             class="position-fixed top-0 end-0 p-3"
+             style="z-index: 1050; display: none;">
+            <div class="spinner-border text-primary" role="status" style="width: 1.5rem; height: 1.5rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+
+        <div class="modal fade" id="logModal" tabindex="-1" aria-labelledby="logModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Log Detail</h5></div>
+                    <div class="modal-body"><pre id="logDetailContent" class="text-wrap"></pre></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 <script src="/js/bootstrap.bundle.min.js"></script>
+
 <script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const allForms = document.querySelectorAll('form');
+        allForms.forEach(form => {
+            form.addEventListener('submit', () => {
+                showGlobalSpinner()
+            });
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const overlay = document.getElementById('loading-overlay');
+        const navLinks = document.querySelectorAll('a.nav-link');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('#') && !href.startsWith('javascript')) {
+                    showGlobalSpinner()
+                }
+            });
+        });
+    });
+
+
     function copyToClipboard(elementId) {
         const text = document.getElementById(elementId).textContent;
-        navigator.clipboard.writeText(text)
-            .then(() => alert("✅ Copied!"))
-            .catch(err => alert("❌ Copy failed: " + err));
+        navigator.clipboard.writeText(text).then(() => {
+            showToast("📋 Copied!")
+        });
     }
-</script>
-<script>
+
+    function showGlobalSpinner() {
+        const el = document.getElementById("global-loading-indicator");
+        el.style.display = "block";
+        setTimeout(() => el.style.opacity = "1", 10);
+    }
+
+    function hideGlobalSpinner() {
+        const el = document.getElementById("global-loading-indicator");
+        el.style.opacity = "0";
+        setTimeout(() => el.style.display = "none", 300);
+    }
+
+
+    function showToast(message, isError = false) {
+        const toastEl = document.getElementById('custom-toast');
+        const toastBody = document.getElementById('toast-message');
+
+        toastBody.innerText = message;
+
+        if (isError) {
+            toastEl.classList.remove('bg-info', 'bg-success');
+            toastEl.classList.add('bg-danger', 'text-white');
+        } else {
+            toastEl.classList.remove('bg-danger');
+            toastEl.classList.add('bg-info', 'text-dark');
+        }
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
     const logModal = document.getElementById('logModal');
     logModal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
@@ -129,5 +307,4 @@
     });
 </script>
 </body>
-
 </html>

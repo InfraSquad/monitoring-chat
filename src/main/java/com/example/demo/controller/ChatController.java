@@ -5,6 +5,7 @@ import com.example.demo.model.ChatHistory;
 import com.example.demo.model.ChatMessage;
 import com.example.demo.repository.ChatHistoryRepository;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -13,8 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
@@ -85,4 +85,31 @@ public class ChatController {
             messagingTemplate.convertAndSend("/topic/" + info.getRoom() + "/users", userTracker.getUsers(info.getRoom()));
         }
     }
+
+    @PostMapping("/react/{room}/{messageId}")
+    @ResponseBody
+    public ResponseEntity<?> reactToMessage(@PathVariable String room,
+                                            @PathVariable Long messageId,
+                                            @RequestParam String emoji) {
+        List<ChatHistory> history = chatRepo.findByRoomOrderByTimestampAsc(room);
+        if (history == null) return ResponseEntity.notFound().build();
+
+        for (ChatHistory msg : history) {
+            if (msg.getId().equals(messageId)) {
+                var reaction = msg.getReactions();
+                reaction.merge(emoji, 1, Integer::sum);
+                msg.setReactions(reaction);
+
+                // ✅ Lưu vào DB
+                chatRepo.save(msg);
+
+                // Broadcast lại để cập nhật
+                messagingTemplate.convertAndSend("/topic/" + room, msg);
+                return ResponseEntity.ok(msg);
+            }
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
 }

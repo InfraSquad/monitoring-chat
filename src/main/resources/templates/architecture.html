@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
-    <title>Internal URL Health</title>
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>System Architecture</title>
     <link href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="/bootstrap-icons-1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
         .nav-link {
             transition: background-color 0.3s ease, color 0.3s ease;
             border-radius: 0.375rem;
@@ -25,11 +29,36 @@
         .nav-item {
             margin-bottom: 0.25rem;
         }
-    </style>
 
+        .zoom-container {
+            overflow: hidden;
+            cursor: zoom-in;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .zoom-container img {
+            transform: scale(0.9); /* nhỏ lại 90% */
+            max-width: 80%;
+            transition: transform 0.3s ease;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .zoom-container.zoomed img {
+            transform: scale(2.2);
+            cursor: zoom-out;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+    </style>
 </head>
+
 <body class="bg-light">
-    <div class="d-flex">
+<div class="d-flex">
     <!-- Sidebar -->
     <div class="bg-white border-end shadow-sm" style="width: 240px; min-height: 100vh;">
         <div class="p-3 border-bottom">
@@ -81,44 +110,14 @@
 
     <!-- Main Content -->
     <div class="flex-grow-1 p-4">
-        <!-- Chat hoặc màn hình chính hiển thị ở đây -->
-        <h3>🩺 Internal Service Health</h3>
-        <p class="text-muted">Theo dõi trạng thái hoạt động của các URL nội bộ.</p>
-        <table class="table table-bordered table-hover">
-            <thead class="table-primary">
-            <tr>
-                <th>URL</th>
-                <th>Status</th>
-                <th>Last Checked</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="url : ${urlPage.content}">
-                <td th:text="${url.url}"></td>
-                <td>
-                    <span th:if="${url.reachable}" class="badge bg-success">OK</span>
-                    <span th:if="${!url.reachable}" class="badge bg-danger">DOWN</span>
-                </td>
-                <td th:text="${#temporals.format(url.lastChecked, 'yyyy-MM-dd HH:mm:ss')}"></td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="page-header text-center">
+            <h3>🧭 System Architecture</h3>
+            <p class="text-muted">Tổng quan các service và luồng giao tiếp.</p>
+        </div>
 
-        <!-- Pagination control -->
-        <nav th:if="${urlPage.totalPages > 1}">
-            <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${urlPage.first}? 'disabled'">
-                    <a class="page-link" th:href="@{/dashboard(page=${urlPage.number - 1})}">Previous</a>
-                </li>
-                <li class="page-item" th:each="i : ${#numbers.sequence(0, urlPage.totalPages - 1)}"
-                    th:classappend="${urlPage.number == i}? 'active'">
-                    <a class="page-link" th:href="@{/dashboard(page=${i})}" th:text="${i + 1}"></a>
-                </li>
-                <li class="page-item" th:classappend="${urlPage.last}? 'disabled'">
-                    <a class="page-link" th:href="@{/dashboard(page=${urlPage.number + 1})}">Next</a>
-                </li>
-            </ul>
-        </nav>
+        <div class="zoom-container" id="zoomBox">
+            <img src="/images/diagram.jpg" alt="Architecture Diagram" id="diagramImg">
+        </div>
     </div>
 </div>
 <!-- Loading Button (Top-Right Corner) -->
@@ -130,6 +129,7 @@
     </div>
 </div>
 <script>
+
     document.addEventListener('DOMContentLoaded', () => {
         const allForms = document.querySelectorAll('form');
         allForms.forEach(form => {
@@ -164,6 +164,13 @@
         el.style.opacity = "0";
         setTimeout(() => el.style.display = "none", 300);
     }
+</script>
+<script>
+    const zoomBox = document.getElementById('zoomBox');
+
+    zoomBox.addEventListener('click', () => {
+        zoomBox.classList.toggle('zoomed');
+    });
 </script>
 </body>
 
