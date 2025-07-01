@@ -1,9 +1,6 @@
 package com.example.demo.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +11,8 @@ public class ChatHistory {
     private Long id;
 
     private String sender;
+    @Lob
+    @Column(columnDefinition = "CLOB")
     private String content;
     private String room;
     private LocalDateTime timestamp;

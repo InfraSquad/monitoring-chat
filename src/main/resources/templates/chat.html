@@ -3,32 +3,141 @@
 <head>
     <title>Chat Room</title>
     <link href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/bootstrap-icons-1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .emoji {
+            font-size: 1.4em;
+            cursor: pointer;
+            padding: 3px;
+            transition: 0.2s;
+            border-radius: 5px;
+        }
+        .emoji:hover {
+            background-color: #f0f0f0;
+        }
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #212529;
+            text-align: center;
+            line-height: 40px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+
+        .chat-message {
+            display: flex;
+        }
+
+        .message-bubble {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+
+        .message-bubble strong {
+            color: #0d6efd;
+        }
+    </style>
+
 </head>
 <body class="container py-5">
 
-<h2>🗨️ Realtime Chat Room</h2>
+<h2 class="mb-4">
+    <i class="bi bi-chat-dots-fill text-primary me-2"></i> Internal Chat
+</h2>
 
-<div class="mb-3">
-    <input type="text" id="nickname" class="form-control" placeholder="Enter your nickname">
-</div>
-<div class="mb-3">
-    <input type="text" id="room" class="form-control" placeholder="Enter room name">
-</div>
-<div class="mb-3">
-    <button onclick="connect()" class="btn btn-success">Join Room</button>
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="nickname" class="form-control" placeholder="Enter your nickname">
+    </div>
+    <div class="col-md-4">
+        <input type="text" id="room" class="form-control" placeholder="Enter room name">
+    </div>
+    <div class="col-md-4">
+        <button onclick="connect()" class="btn btn-success">Join Room</button>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-body" id="chat-box" style="height: 300px; overflow-y: auto; background: #f5f5f5">
-        <div th:each="msg : ${history}" th:text="${msg.sender + ': ' + msg.content}"></div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-body" id="chat-box" style="height: 500px; overflow-y: auto; background: #f5f5f5">
+                <div th:each="msg : ${history}" class="chat-message d-flex align-items-start mb-2">
+
+                    <!-- Avatar -->
+                    <div class="avatar-circle me-2 d-flex align-items-center justify-content-center text-white"
+                         style="width: 40px; height: 40px; border-radius: 50%; font-weight: bold; background-color: #6c757d;">
+                        <span th:text="${msg.sender != null ? msg.sender.substring(0, 1).toUpperCase() : '?'}">A</span>
+                    </div>
+
+                    <!-- Message Bubble -->
+                    <div class="message-bubble bg-light p-2 rounded" style="max-width: 400px; word-break: break-word;">
+                        <div th:if="${msg.content != null and msg.content.startsWith('data:image')}">
+                            <img th:src="${msg.content}" class="img-fluid rounded" style="max-width: 200px;" alt="image" />
+                        </div>
+                        <div th:if="${msg.content != null and !msg.content.startsWith('data:image')}">
+                            <strong th:text="${msg.sender}">Sender</strong><br/>
+                            <span th:text="${msg.content}">Text content</span>
+                        </div>
+
+                        <!-- ✅ Hiển thị thời gian gửi -->
+                        <div class="text-muted small mt-1" th:if="${msg.timestamp != null}"
+                             th:text="${#temporals.format(msg.timestamp, 'HH:mm')}">
+                            14:30
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- typing indicator -->
+        <div id="typing-indicator" style="font-style: italic; color: gray; margin-bottom: 5px;"></div>
+        <!-- Giao diện gửi tin -->
+        <div class="input-group mt-3">
+            <input type="text" id="message" class="form-control" placeholder="Type your message...">
+            <!-- Nút mở emoji -->
+            <button id="emoji-btn" class="btn btn-outline-secondary">😊</button>
+
+            <!-- Emoji Picker -->
+            <div id="emoji-picker" class="border rounded p-2 bg-white shadow"
+                 style="display: none; position: absolute; right: 0; bottom: 60px; z-index: 1000; width: 250px; max-height: 200px; overflow-y: auto;">
+                <!-- Dàn emoji -->
+                <div id="emoji-container" style="display: flex; flex-wrap: wrap; gap: 5px;"></div>
+            </div>
+
+            <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="sendImage(this)">
+            <button class="btn btn-outline-secondary" onclick="document.getElementById('imageInput').click()">
+                <i class="bi bi-image"></i> <!-- icon hình ảnh -->
+            </button>
+
+
+            <button onclick="sendMessage()" class="btn btn-primary">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- user list -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                👥 Online Users (<span id="user-count">0</span>)
+            </div>
+            <ul class="list-group list-group-flush" id="user-list">
+                <!-- nicknames here -->
+            </ul>
+        </div>
     </div>
 </div>
 
 
-<div class="input-group mt-3">
-    <input type="text" id="message" class="form-control" placeholder="Type a message">
-    <button onclick="sendMessage()" class="btn btn-primary">Send</button>
-</div>
 
 <script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
 <script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
@@ -37,6 +146,22 @@
     let currentRoom = "";
 
     let connected = false;
+
+    let typingTimeout;
+
+    document.getElementById("message").addEventListener("input", function () {
+        const sender = document.getElementById("nickname").value;
+        const room = document.getElementById("room").value;
+
+        stompClient.send(`/app/chat/${room}/typing`, {}, JSON.stringify({ sender, room }));
+
+        // Gửi typing mỗi 3s nếu tiếp tục gõ
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            stompClient.send(`/app/chat/${room}/typing`, {}, JSON.stringify({ sender: "" }));
+        }, 3000);
+    });
+
 
     // Helper: Lấy query param từ URL
     function getQueryParam(name) {
@@ -63,6 +188,13 @@
 
         const nickname = document.getElementById("nickname").value;
         const room = document.getElementById("room").value;
+
+        // ✅ Kiểm tra nickname và room phải khác null / rỗng
+        if (!nickname || !room) {
+            alert("Vui lòng nhập đầy đủ tên và phòng!");
+            return;
+        }
+
         currentRoom = room;
 
         localStorage.setItem("chatRoom", room); // lưu lại phòng
@@ -72,7 +204,13 @@
         stompClient = Stomp.over(socket);
         stompClient.connect({}, () => {
 
-            // // Gửi tin nhắn chào mừng
+            // ✅ Gửi sự kiện join để thêm user
+            stompClient.send(`/app/chat/${room}/join`, {}, JSON.stringify({
+                sender: nickname,
+                room: room
+            }));
+
+            // ✅ Vẫn giữ tin nhắn chào mừng để hiện ra giao diện
             stompClient.send(`/app/chat/${room}`, {}, JSON.stringify({
                 sender: "System",
                 content: `${nickname} has joined the room!`,
@@ -81,11 +219,38 @@
 
             stompClient.subscribe(`/topic/${room}`, (message) => {
                 const msg = JSON.parse(message.body);
-                showMessage(msg.content, msg.sender);
+                showMessage(msg.content, msg.sender, msg.timestamp); // ⏰ thêm timestamp
 
                 if (msg.sender !== nickname) {
                     notify("New message from " + msg.sender);
                 }
+            });
+
+            stompClient.subscribe(`/topic/${room}/typing`, (msg) => {
+                const typingUser = msg.body;
+                const indicator = document.getElementById("typing-indicator");
+
+                if (typingUser && typingUser !== nickname) {
+                    indicator.innerText = `${typingUser} is typing...`;
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => indicator.innerText = "", 1000);
+                } else {
+                    indicator.innerText = "";
+                }
+            });
+
+            stompClient.subscribe(`/topic/${room}/users`, (msg) => {
+                const users = JSON.parse(msg.body);
+                document.getElementById("user-count").innerText = users.length;
+
+                const list = document.getElementById("user-list");
+                list.innerHTML = "";
+                users.forEach(u => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.innerText = u;
+                    list.appendChild(li);
+                });
             });
 
             connected = true; // đánh dấu đã kết nối
@@ -99,12 +264,37 @@
         }
     });
 
+    function sendImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const base64Image = e.target.result;
+            const sender = document.getElementById("nickname").value;
+            const room = document.getElementById("room").value;
+
+            stompClient.send(`/app/chat/${room}`, {}, JSON.stringify({
+                sender: sender,
+                content: base64Image,
+                room: room,
+                type: "image"
+            }));
+        };
+        reader.readAsDataURL(file);
+
+        // Reset input to allow re-uploading the same file
+        input.value = '';
+    }
+
+
     function sendMessage() {
-        const content = document.getElementById("message").value.trim();
+        const messageInput = document.getElementById("message");
+        const content = messageInput.value.trim();
         const sender = document.getElementById("nickname").value;
         const room = document.getElementById("room").value;
 
-        if (!content || !sender || !room) return; // không gửi nếu thiếu
+        if (!content || !sender || !room) return;
 
         stompClient.send(`/app/chat/${room}`, {}, JSON.stringify({
             sender: sender,
@@ -112,19 +302,38 @@
             room: room
         }));
 
-        document.getElementById("message").value = "";
+        messageInput.value = "";
+        messageInput.focus(); // 👈 focus lại vào ô nhập
     }
 
-    function showMessage(text, sender) {
+    function showMessage(text, sender, timestamp) {
         const chatBox = document.getElementById("chat-box");
 
         const messageDiv = document.createElement("div");
-        messageDiv.innerHTML = `<strong style="color: ${getColor(sender)}">${sender}</strong>: ${text}`;
-        messageDiv.className = "mb-1";
-        chatBox.appendChild(messageDiv);
+        messageDiv.className = "chat-message d-flex align-items-start mb-2";
 
-        chatBox.scrollTop = chatBox.scrollHeight; // auto scroll
+        const avatar = `<div class="avatar-circle">${sender.charAt(0).toUpperCase()}</div>`;
+
+        let formattedTime = "";
+        if (timestamp) {
+            const date = new Date(timestamp);
+            formattedTime = `<div class="text-muted small">${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`;
+        }
+
+        let bubbleContent;
+        if (text.startsWith("data:image")) {
+            bubbleContent = `<img src="${text}" class="img-fluid rounded" style="max-width: 200px;" alt="image" />${formattedTime}`;
+        } else {
+            bubbleContent = `<strong>${sender}</strong><br><span>${text}</span><br>${formattedTime}`;
+        }
+
+        const bubble = `<div class="message-bubble">${bubbleContent}</div>`;
+        messageDiv.innerHTML = avatar + bubble;
+
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
+
 
     // Gán màu theo tên cố định (hàm băm đơn giản)
     function getColor(sender) {
@@ -151,5 +360,48 @@
         }
     }
 </script>
+<script>
+    const emojiBtn = document.getElementById("emoji-btn");
+    const picker = document.getElementById("emoji-picker");
+    const input = document.getElementById("message");
+    const emojiContainer = document.getElementById("emoji-container");
+
+    // Nạp nhiều emoji hơn
+    const emojis = ["😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😋","😍","😘","😗","😙","😚",
+        "😜","😝","🤪","🤨","🧐","🤓","😎","🥳","😤","😢","😭","😱","😨","😰","😡","🤬",
+        "🥶","🥵","🤯","😇","🤠","🤡","👻","💀","☠️","👽","👾","🎃","😺","😸","😹","😻",
+        "😼","😽","🙀","😿","😾","👐","🙌","👏","🙏","💪","🤝","👍","👎","👊","✌️","🤞","🤟"];
+
+    emojiContainer.innerHTML = emojis.map(e => `<span class="emoji">${e}</span>`).join("");
+
+    // Toggle emoji panel
+    emojiBtn.addEventListener("click", (e) => {
+        picker.style.display = picker.style.display === "none" ? "block" : "none";
+        e.stopPropagation();
+    });
+
+    // Insert emoji into input at cursor position
+    emojiContainer.addEventListener("click", (e) => {
+        if (e.target.classList.contains("emoji")) {
+            const emoji = e.target.textContent;
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            input.value = text.substring(0, start) + emoji + text.substring(end);
+            input.setSelectionRange(start + emoji.length, start + emoji.length);
+            input.focus();
+            // không ẩn picker để tiếp tục chọn thêm emoji
+        }
+    });
+
+    // Đóng picker nếu click ra ngoài
+    document.addEventListener("click", function (e) {
+        if (!emojiBtn.contains(e.target) && !picker.contains(e.target)) {
+            picker.style.display = "none";
+        }
+    });
+
+</script>
+
 </body>
 </html>

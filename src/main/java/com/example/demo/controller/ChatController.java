@@ -1,18 +1,25 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.OnlineUserTracker;
 import com.example.demo.model.ChatHistory;
 import com.example.demo.model.ChatMessage;
 import com.example.demo.repository.ChatHistoryRepository;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.time.LocalDateTime;
+import java.util.LinkedList;
 import java.util.List;
 
 @Controller
@@ -20,10 +27,12 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatHistoryRepository chatRepo;
+    private final OnlineUserTracker userTracker;
 
-    public ChatController(SimpMessagingTemplate messagingTemplate, ChatHistoryRepository chatRepo) {
+    public ChatController(SimpMessagingTemplate messagingTemplate, ChatHistoryRepository chatRepo, OnlineUserTracker userTracker) {
         this.messagingTemplate = messagingTemplate;
         this.chatRepo = chatRepo;
+        this.userTracker = userTracker;
     }
 
     @MessageMapping("/chat/{room}")
@@ -31,14 +40,35 @@ public class ChatController {
         message.setTimestamp(LocalDateTime.now());
         chatRepo.save(message);
         messagingTemplate.convertAndSend("/topic/" + room, message);
+
+        // Gửi danh sách người dùng online
+        messagingTemplate.convertAndSend("/topic/" + room + "/users", userTracker.getUsers(room));
+    }
+
+    @MessageMapping("/chat/{room}/join")
+    public void joinRoom(@DestinationVariable String room, ChatHistory message, SimpMessageHeaderAccessor headerAccessor) {
+        String sessionId = headerAccessor.getSessionId(); // ✅ lấy sessionId
+        userTracker.userJoined(sessionId, room, message.getSender());
+        // Gửi danh sách người dùng online
+        messagingTemplate.convertAndSend("/topic/" + room + "/users", userTracker.getUsers(room));
+    }
+
+
+    @MessageMapping("/chat/{room}/typing")
+    public void typing(@DestinationVariable String room, ChatMessage message) {
+        messagingTemplate.convertAndSend("/topic/" + room + "/typing", message.getSender());
     }
 
     // Khi load chat.html, gửi lịch sử tin nhắn
     @GetMapping("/chat")
     public String chatPage(@RequestParam(required = false) String room, Model model) {
         if (room != null && !room.isEmpty()) {
-            List<ChatHistory> history = chatRepo.findByRoomOrderByTimestampAsc(room);
-            model.addAttribute("history", history);
+            try {
+                List<ChatHistory> history = chatRepo.findByRoomOrderByTimestampAsc(room);
+                model.addAttribute("history", history);
+            }catch (Exception e) {
+                model.addAttribute("history", null);
+            }
             model.addAttribute("room", room);
         } else {
             model.addAttribute("room", ""); // để client tự lấy từ localStorage
@@ -46,4 +76,13 @@ public class ChatController {
         return "chat";
     }
 
+    @EventListener
+    public void handleDisconnect(SessionDisconnectEvent event) {
+        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
+        OnlineUserTracker.RoomNickname info = userTracker.getUserInfo(sessionId);
+        if (info != null) {
+            userTracker.userLeft(sessionId);
+            messagingTemplate.convertAndSend("/topic/" + info.getRoom() + "/users", userTracker.getUsers(info.getRoom()));
+        }
+    }
 }
