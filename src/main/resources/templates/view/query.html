@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+<section class="container mt-4">
+    <h4 class="mb-3 text-primary">📊 SQL Query Playground</h4>
+
+    <!-- SQL Input -->
+    <form th:action="@{/query/execute}" method="post">
+        <div class="mb-2">
+            <label class="form-label">Viết câu lệnh SQL của bạn:</label>
+            <textarea class="form-control" name="sql" rows="6" placeholder="SELECT * FROM employees;" required></textarea>
+        </div>
+        <div class="text-end">
+            <button type="submit" class="btn btn-success">▶️ Thực thi</button>
+        </div>
+    </form>
+
+    <!-- Kết quả -->
+    <div class="mt-4" th:if="${result != null}">
+        <h5>Kết quả truy vấn:</h5>
+        <p class="text-muted">⏱️ Thời gian: <span th:text="${executionTimeMs}"></span> ms | 📄 Số dòng: <span th:text="${rowCount}"></span></p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover table-sm">
+                <thead class="table-light">
+                <tr>
+                    <th th:each="header : ${headers}" th:text="${header}">Cột</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${result}">
+                    <td th:each="cell : ${row}" th:text="${cell}">value</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lỗi nếu có -->
+    <div th:if="${error != null}" class="alert alert-danger mt-3">
+        ⚠️ <span th:text="${error}"></span>
+    </div>
+</section>
+</html>

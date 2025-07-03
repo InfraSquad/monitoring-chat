@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+<head>
+    <meta charset="UTF-8">
+    <title>🧠 System Info</title>
+    <link rel="stylesheet" href="/webjars/bootstrap/5.3.0/css/bootstrap.min.css">
+</head>
+<body>
+<section class="container mt-4">
+    <h2 class="text-primary mb-3"><i class="bi bi-hdd-network"></i> System Information</h2>
+    <p class="text-muted">Thông tin thời gian thực về hệ điều hành, JVM và bộ nhớ.</p>
+
+    <table class="table table-bordered shadow-sm table-hover">
+        <thead class="table-primary">
+        <tr>
+            <th>📌 Thông số</th>
+            <th>🔢 Giá trị</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="entry : ${systemInfo}">
+            <td th:text="${entry.key}"></td>
+            <td th:text="${entry.value}"></td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

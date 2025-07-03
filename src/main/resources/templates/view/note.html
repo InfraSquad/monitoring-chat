@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+<head>
+    <meta charset="UTF-8">
+    <title>📝 Insight Notepad</title>
+    <style>
+        .note-tab {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .note-area {
+            min-height: 300px;
+            resize: vertical;
+        }
+
+        .note-container {
+            max-width: 960px;
+        }
+
+        .autosave-status {
+            font-size: 0.85rem;
+        }
+
+        .floating-alert {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+        }
+
+        .nav-tabs .nav-link {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<section class="container mt-4 note-container">
+    <h3 class="mb-3 text-primary">📝 Insight Notepad</h3>
+
+    <!-- Tab danh sách note cũ + nút tạo mới -->
+    <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+        <div th:each="item : ${noteList}" class="note-tab border rounded px-3 py-1 note-title-truncate"
+             th:text="${item.title}"
+             th:classappend="${note != null and note.id == item.id} ? 'active'"
+             th:attr="onclick=|window.location.href='/note?id=${item.id}'|">
+        </div>
+
+        <!-- Nút tạo mới -->
+        <a href="/note/new" class="btn btn-outline-primary btn-sm d-flex align-items-center">
+            <i class="bi bi-plus-circle me-1"></i> Ghi chú mới
+        </a>
+    </div>
+
+
+    <!-- Tab panes -->
+    <div class="tab-content" id="noteTabContent">
+        <div class="tab-pane fade" th:each="note, iter : ${noteList}"
+             th:classappend="${note?.id} == ${activeId} ? 'show active'"
+             th:id="'tab-' + ${note.id}" role="tabpanel">
+
+            <form th:id="'form-' + ${note.id}" class="noteForm">
+                <input type="hidden" th:id="'noteId-' + ${note.id}" th:value="${note.id}" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tiêu đề</label>
+                    <input type="text" class="form-control noteTitle" th:id="'noteTitle-' + ${note.id}"
+                           th:value="${note.title}" placeholder="Nhập tiêu đề ghi chú...">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nội dung</label>
+                    <textarea class="form-control note-area noteContent" th:id="'noteContent-' + ${note.id}"
+                              placeholder="Nhập nội dung ghi chú..." rows="12"
+                              th:text="${note.content}"></textarea>
+                </div>
+
+                <div class="text-muted autosave-status" th:id="'autosaveStatus-' + ${note.id}">⏳ Đang chờ nhập nội dung...</div>
+            </form>
+            <div class="mt-3">
+                <a th:if="${note != null}" th:href="@{'/note/delete/' + ${note.id}}"
+                   class="btn btn-outline-danger btn-sm"
+                   onclick="return confirm('Bạn có chắc chắn muốn xoá ghi chú này không?')">
+                    🗑️ Xoá ghi chú
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast align-items-center text-white bg-success border-0 floating-alert" id="autosaveToast" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">💾 Đã tự động lưu!</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <script src="/webjars/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const toast = new bootstrap.Toast(document.getElementById("autosaveToast"));
+        const forms = document.querySelectorAll(".noteForm");
+
+        forms.forEach(form => {
+            const id = form.querySelector("input[type='hidden']").value;
+            const titleEl = form.querySelector(".noteTitle");
+            const contentEl = form.querySelector(".noteContent");
+            const statusEl = form.querySelector(".autosave-status");
+            let timeout;
+            let lastContent = contentEl.value;
+
+            const autosave = () => {
+                const title = titleEl.value;
+                const content = contentEl.value;
+                if (content === lastContent) return;
+
+                fetch("/notepad/save", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({id, title, content})
+                }).then(res => {
+                    if (res.ok) {
+                        lastContent = content;
+                        statusEl.textContent = "💾 Đã lưu lúc " + new Date().toLocaleTimeString();
+                        toast.show();
+                    } else {
+                        statusEl.textContent = "❌ Không thể lưu.";
+                    }
+                });
+            };
+
+            [titleEl, contentEl].forEach(el => {
+                el.addEventListener("input", () => {
+                    statusEl.textContent = "✍️ Đang chỉnh sửa...";
+                    clearTimeout(timeout);
+                    timeout = setTimeout(autosave, 2000);
+                });
+            });
+        });
+    </script>
+</section>
+</html>

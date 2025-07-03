@@ -39,7 +39,8 @@ public class FeignLogController {
 
         model.addAttribute("logPage", logPage);
         model.addAttribute("keyword", keyword);
-        return "feign-logs";
+        model.addAttribute("view", "view/feign-logs");
+        return "layout"; // Load layout.html
     }
 
     @GetMapping("/feign-logs/export")
