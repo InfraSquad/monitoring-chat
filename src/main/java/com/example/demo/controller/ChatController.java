@@ -53,7 +53,6 @@ public class ChatController {
         messagingTemplate.convertAndSend("/topic/" + room + "/users", userTracker.getUsers(room));
     }
 
-
     @MessageMapping("/chat/{room}/typing")
     public void typing(@DestinationVariable String room, ChatMessage message) {
         messagingTemplate.convertAndSend("/topic/" + room + "/typing", message.getSender());
