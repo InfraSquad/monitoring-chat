@@ -1,0 +1,18 @@
+<!-- templates/fragments/tree-view.html -->
+<ul class="list-group" th:fragment="tree(nodes)">
+    <li th:each="node : ${nodes}" class="list-group-item">
+        <div class="d-flex align-items-start">
+            <button class="btn btn-sm btn-light me-2 toggle-btn" type="button"
+                    th:if="${node.children != null and !#lists.isEmpty(node.children)}"
+                    data-bs-toggle="collapse"
+                    th:attr="data-bs-target='#collapse-' + ${node.id}" aria-expanded="false">
+                <i class="bi bi-caret-right-fill"></i>
+            </button>
+            <span th:text="${node.name}" class="flex-grow-1"></span>
+        </div>
+
+        <div th:id="'collapse-' + ${node.id}" class="collapse ms-4 mt-2">
+            <ul class="list-group" th:replace="::tree(${node.children})"></ul>
+        </div>
+    </li>
+</ul>

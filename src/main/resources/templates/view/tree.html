@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:fragment="content">
+<head>
+    <meta charset="UTF-8">
+    <title>🌳 Tree View with Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .tree-container {
+            height: calc(100vh - 65px); /* tùy chiều cao navbar */
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .tree-node {
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-left: 8px;
+            border-radius: 4px;
+        }
+
+        .tree-node:hover {
+            background-color: #f1f1f1;
+        }
+
+        .tree-node.active {
+            background-color: #d0ebff;
+            font-weight: 500;
+        }
+
+        .node-children {
+            margin-left: 20px;
+        }
+
+        .details-pane {
+            /*padding: 1rem;*/
+        }
+
+        .bi {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+<section class="container-fluid mt-3">
+    <h4 class="mb-3 text-primary">🌳 Tree View + Chi tiết</h4>
+
+    <div class="row full-height">
+        <!-- Tree View -->
+        <div class="col-md-3 tree-container">
+            <div th:replace="fragments/tree-view :: tree(${treeData})"></div>
+        </div>
+
+        <!-- Details View -->
+        <div class="col-md-9 details-pane">
+            <div id="node-detail" class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0" id="detail-title">📄 Chi tiết node</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> <span id="detail-id">—</span></p>
+                    <p><strong>Tên:</strong> <span id="detail-name">—</span></p>
+                    <p><strong>Mô tả:</strong> <span id="detail-description">Chọn một node ở bên trái để xem chi tiết...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Toggle icons
+        document.querySelectorAll(".toggle-btn").forEach(button => {
+            button.addEventListener("click", function () {
+                const icon = this.querySelector("i");
+                icon.classList.toggle("bi-caret-right-fill");
+                icon.classList.toggle("bi-caret-down-fill");
+                const children = this.parentElement.querySelector(".node-children");
+                if (children) children.classList.toggle("d-none");
+            });
+        });
+
+        // Select node
+        document.querySelectorAll(".tree-node").forEach(node => {
+            node.addEventListener("click", function () {
+                // Remove active class
+                document.querySelectorAll(".tree-node").forEach(n => n.classList.remove("active"));
+                this.classList.add("active");
+
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+
+                // Fill in detail pane (fake description for demo)
+                document.getElementById("detail-id").textContent = id;
+                document.getElementById("detail-name").textContent = name;
+                document.getElementById("detail-description").textContent = `🔍 Đây là phần mô tả giả lập cho node "${name}". Bạn có thể tùy biến nội dung động hoặc gọi API để lấy dữ liệu thật.`;
+            });
+        });
+    });
+</script>
+</body>
+</html>
