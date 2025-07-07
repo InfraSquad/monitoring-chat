@@ -9,15 +9,18 @@ import com.example.demo.service.HealthCheckService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
+import java.nio.file.AccessDeniedException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +37,9 @@ public class ProcessController {
                 .filter(p -> p.info().command().orElse("").contains("java"))
                 .map(JavaProcessInfo::from)
                 .collect(Collectors.toList());
-
+//        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Bạn không có quyền truy cập");
+//        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập");
+//        throw new AccessDeniedException("Bạn không có quyền truy cập");
         model.addAttribute("javaProcesses", processes);
         model.addAttribute("view", "view/process");
         return "layout"; // Load layout.html
