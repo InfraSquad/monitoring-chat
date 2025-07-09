@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="subtaskTree(tasks)">
+    <ul class="list-unstyled ms-3 mt-2">
+        <li th:each="task : ${tasks}">
+            🔹 <a th:href="@{/task/{id}(id=${task.id})}" class="text-decoration-none text-secondary">
+            <span th:text="${task.title}">Tên subtask</span>
+        </a>
+
+            <!-- Gọi lại chính fragment nếu có subtask con -->
+            <div th:if="${task.subTasks != null and !task.subTasks.isEmpty()}"
+                 th:replace="fragments/subtask-tree-board :: subtaskTree(${task.subTasks})">
+            </div>
+        </li>
+    </ul>
+</div>
+</html>
