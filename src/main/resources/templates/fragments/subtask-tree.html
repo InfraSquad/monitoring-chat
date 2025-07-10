@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="renderSubtaskList(subtasks)">
+    <ul class="subtask-list">
+        <li th:each="sub : ${subtasks}">
+            <span>📝 <a th:href="@{/task/{id}(id=${sub.id})}" th:text="${sub.title}"></a></span>
+            <span class="badge bg-secondary ms-2" th:text="${sub.status}">Status</span>
+            <!-- Recursive -->
+            <div th:if="${!#lists.isEmpty(sub.subTasks)}"
+                 th:insert="~{fragments/subtask-tree :: renderSubtaskList(subtasks=${sub.subTasks})}">
+            </div>
+        </li>
+    </ul>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Chi tiết công việc - ' + ${task.title}">Chi tiết công việc</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <style>
+        .select2-container .select2-selection--multiple {
+            min-height: 38px;
+        }
+        ul.subtask-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <a href="/tasks" class="btn btn-outline-primary mb-3">⬅️ Quay lại bảng công việc</a>
+
+    <!-- Cập nhật Task -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form th:action="@{/task/save}" method="post">
+                <input type="hidden" name="id" th:value="${task.id}"/>
+
+                <h4 class="card-title text-primary mb-3">📝 Cập nhật công việc</h4>
+
+                <!-- Tiêu đề -->
+                <div class="mb-3">
+                    <label class="form-label">📌 Tiêu đề</label>
+                    <input type="text" name="title" class="form-control" th:value="${task.title}" required>
+                </div>
+
+                <!-- Mô tả -->
+                <div class="mb-3">
+                    <label class="form-label">🗒️ Mô tả</label>
+                    <textarea name="description" class="form-control" rows="4" th:text="${task.description}"></textarea>
+                </div>
+
+                <!-- Trạng thái -->
+                <div class="mb-3">
+                    <label class="form-label">📂 Trạng thái</label>
+                    <select name="status" class="form-select" required>
+                        <option value="TODO" th:selected="${task.status == 'TODO'}">TODO</option>
+                        <option value="IN_PROGRESS" th:selected="${task.status == 'IN_PROGRESS'}">In Progress</option>
+                        <option value="DONE" th:selected="${task.status == 'DONE'}">Done</option>
+                    </select>
+                </div>
+
+                <!-- Người được giao -->
+                <div class="mb-3">
+                    <label class="form-label">👨‍💻 Người được giao</label>
+<!--                    <select id="assignees" name="assigneeIds" multiple class="form-select" required>-->
+<!--                        <option th:each="user : ${users}" th:value="${user.id}"-->
+<!--                                th:text="${user.fullName}"-->
+<!--                                th:selected="${task.assignees?.contains(user)}">-->
+<!--                        </option>-->
+<!--                    </select>-->
+                    <select id="assignees" name="assigneeIds" multiple class="form-select" required>
+                        <th:block th:each="node : ${users}">
+                            <th:block th:insert="~{fragments/user-option :: render(node=${node}, indent=0, selectedUsers=${task.assignees})}" />
+                        </th:block>
+                    </select>
+                </div>
+
+
+                <!-- Người theo dõi -->
+                <div class="mb-3">
+                    <label class="form-label">👀 Người theo dõi</label>
+<!--                    <select id="watchers" name="watcherIds" multiple class="form-select">-->
+<!--                        <option th:each="user : ${users}" th:value="${user.id}"-->
+<!--                                th:text="${user.fullName}"-->
+<!--                                th:selected="${task.watchers?.contains(user)}">-->
+<!--                        </option>-->
+<!--                    </select>-->
+                    <select id="watchers" name="watcherIds" multiple class="form-select">
+                        <th:block th:each="node : ${users}">
+                            <th:block th:insert="~{fragments/user-option :: render(node=${node}, indent=0, selectedUsers=${task.watchers})}" />
+                        </th:block>
+                    </select>
+                </div>
+
+                <!-- Ngày tạo -->
+                <div class="mb-3">
+                    <label class="form-label">📅 Ngày tạo</label>
+                    <p class="form-control-plaintext" th:text="${#temporals.format(task.createdAt, 'dd/MM/yyyy HH:mm')}">---</p>
+                </div>
+
+                <input type="hidden" name="parentId" th:value="${parentId != null ? parentId : task.parentTask?.id}" />
+
+                <!-- Nút lưu -->
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">💾 Lưu Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 🔁 Subtasks -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">📌 Công việc con</h5>
+            <div th:if="${#lists.isEmpty(task.subTasks)}" class="text-muted fst-italic">Không có công việc con.</div>
+            <ul class="subtask-list" th:if="${!#lists.isEmpty(task.subTasks)}"
+                th:insert="~{fragments/subtask-tree :: renderSubtaskList(subtasks=${task.subTasks})}">
+            </ul>
+            <a th:href="@{/task/new(parentId=${task.id})}" class="btn btn-outline-primary btn-sm mt-2">➕ Thêm công việc con</a>
+        </div>
+    </div>
+
+    <!-- 💬 Bình luận -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">💬 Bình luận</h5>
+
+            <!-- Danh sách -->
+            <div class="list-group mb-3">
+                <div class="list-group-item" th:each="comment : ${comments}">
+                    <div class="d-flex justify-content-between">
+                        <strong th:text="${comment.author}">Người dùng</strong>
+                        <small class="text-muted" th:text="${#temporals.format(comment.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                    </div>
+                    <p class="mb-0 mt-1" th:text="${comment.content}">Nội dung bình luận</p>
+                </div>
+                <p class="fst-italic text-muted" th:if="${#lists.isEmpty(comments)}">Chưa có bình luận nào.</p>
+            </div>
+
+            <!-- Form -->
+            <form th:action="@{/task/{id}/comment(id=${task.id})}" method="post">
+                <div class="mb-3">
+                    <label class="form-label">✍️ Viết bình luận:</label>
+                    <textarea name="content" class="form-control" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">💬 Gửi bình luận</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+
+    function formatSelectedTag(selection) {
+        // Lấy text sạch từ data-label, nếu có
+        const label = $(selection.element).data('label');
+        return label || selection.text;
+    }
+
+    $(document).ready(function () {
+        $('#assignees, #watchers').select2({
+            placeholder: "Chọn người...",
+            width: '100%',
+            templateSelection: formatSelectedTag
+        });
+    });
+</script>
+</body>
+</html>

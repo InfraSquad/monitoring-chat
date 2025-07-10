@@ -4,15 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -22,12 +16,27 @@ public class QueryController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    // ✅ Hàm lấy danh sách bảng từ H2 database
+    private List<String> getH2TableNames() {
+        try {
+            return jdbcTemplate.queryForList(
+                    "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC'",
+                    String.class
+            );
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
     @GetMapping
     public String queryPage(Model model) {
         model.addAttribute("sql", "");
-        model.addAttribute("resultHeaders", Collections.emptyList());
-        model.addAttribute("resultRows", Collections.emptyList());
+        model.addAttribute("headers", Collections.emptyList());
+        model.addAttribute("result", Collections.emptyList());
+        model.addAttribute("rowCount", 0);
+        model.addAttribute("executionTimeMs", 0);
         model.addAttribute("error", null);
+        model.addAttribute("tables", getH2TableNames()); // ✅ Gửi danh sách bảng qua view
         model.addAttribute("view", "view/query");
         return "layout"; // Load layout.html
     }
@@ -53,7 +62,13 @@ public class QueryController {
             model.addAttribute("executionTimeMs", end - start);
         } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
+            model.addAttribute("headers", List.of());
+            model.addAttribute("result", List.of());
+            model.addAttribute("rowCount", 0);
+            model.addAttribute("executionTimeMs", 0);
         }
+
+        model.addAttribute("tables", getH2TableNames()); // ✅ Đảm bảo gửi lại danh sách bảng sau POST
         model.addAttribute("view", "view/query");
         return "layout"; // Load layout.html
     }
