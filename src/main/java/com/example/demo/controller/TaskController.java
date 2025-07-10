@@ -55,7 +55,7 @@ public class TaskController {
             task.setParentTask(parent);
         }
         model.addAttribute("task", task);
-        model.addAttribute("users", userService.findAll());
+        model.addAttribute("users", userService.findAllByManagerIsNull());
         return "view/task-detail";
     }
 
@@ -96,7 +96,7 @@ public class TaskController {
     public String viewTaskDetail(@PathVariable Long id, Model model) {
         Task task = taskService.getTaskById(id);
         List<Comment> comments = commentService.findByTaskId(id);
-        List<User> users = userService.findAll();
+        List<User> users = userService.findAllByManagerIsNull();
 
         model.addAttribute("task", task);
         model.addAttribute("users", users);

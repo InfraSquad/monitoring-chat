@@ -1,0 +1,20 @@
+<!-- fragments/user-option.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="render(node, indent, selectedUsers)">
+<!--    <option disabled th:text="${' '.repeat(indent) + '📁 ' + node.username}"></option>-->
+
+    <option
+            th:value="${node.id}"
+            th:attr="data-label=${node.fullName}"
+            th:text="${' '.repeat(indent + 1) + '📁' + node.fullName}"
+            th:selected="${selectedUsers?.contains(node)}">
+    </option>
+
+    <th:block th:each="child : ${node.subordinates}">
+        <th:block th:insert="~{fragments/user-option :: render(node=${child}, indent=${indent + 1}, selectedUsers=${selectedUsers})}" />
+    </th:block>
+</th:block>
+</body>
+</html>

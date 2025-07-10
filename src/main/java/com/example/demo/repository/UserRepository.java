@@ -12,5 +12,6 @@ import java.util.List;
 public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u JOIN u.manager m WHERE m.id = :managerId")
     List<User> findDirectSubordinates(@Param("managerId") Long managerId);
+    List<User> findAllByManagerIsNull();
 }
 

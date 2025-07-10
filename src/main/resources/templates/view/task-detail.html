@@ -52,22 +52,33 @@
                 <!-- Người được giao -->
                 <div class="mb-3">
                     <label class="form-label">👨‍💻 Người được giao</label>
+<!--                    <select id="assignees" name="assigneeIds" multiple class="form-select" required>-->
+<!--                        <option th:each="user : ${users}" th:value="${user.id}"-->
+<!--                                th:text="${user.fullName}"-->
+<!--                                th:selected="${task.assignees?.contains(user)}">-->
+<!--                        </option>-->
+<!--                    </select>-->
                     <select id="assignees" name="assigneeIds" multiple class="form-select" required>
-                        <option th:each="user : ${users}" th:value="${user.id}"
-                                th:text="${user.fullName}"
-                                th:selected="${task.assignees?.contains(user)}">
-                        </option>
+                        <th:block th:each="node : ${users}">
+                            <th:block th:insert="~{fragments/user-option :: render(node=${node}, indent=0, selectedUsers=${task.assignees})}" />
+                        </th:block>
                     </select>
                 </div>
+
 
                 <!-- Người theo dõi -->
                 <div class="mb-3">
                     <label class="form-label">👀 Người theo dõi</label>
+<!--                    <select id="watchers" name="watcherIds" multiple class="form-select">-->
+<!--                        <option th:each="user : ${users}" th:value="${user.id}"-->
+<!--                                th:text="${user.fullName}"-->
+<!--                                th:selected="${task.watchers?.contains(user)}">-->
+<!--                        </option>-->
+<!--                    </select>-->
                     <select id="watchers" name="watcherIds" multiple class="form-select">
-                        <option th:each="user : ${users}" th:value="${user.id}"
-                                th:text="${user.fullName}"
-                                th:selected="${task.watchers?.contains(user)}">
-                        </option>
+                        <th:block th:each="node : ${users}">
+                            <th:block th:insert="~{fragments/user-option :: render(node=${node}, indent=0, selectedUsers=${task.watchers})}" />
+                        </th:block>
                     </select>
                 </div>
 
@@ -132,10 +143,18 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+
+    function formatSelectedTag(selection) {
+        // Lấy text sạch từ data-label, nếu có
+        const label = $(selection.element).data('label');
+        return label || selection.text;
+    }
+
     $(document).ready(function () {
         $('#assignees, #watchers').select2({
             placeholder: "Chọn người...",
-            width: '100%'
+            width: '100%',
+            templateSelection: formatSelectedTag
         });
     });
 </script>

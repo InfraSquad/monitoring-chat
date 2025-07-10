@@ -30,6 +30,10 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public List<User> findAllByManagerIsNull() {
+        return userRepository.findAllByManagerIsNull();
+    }
+
     public User findById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với id: " + id));
